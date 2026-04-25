@@ -54,9 +54,21 @@ The UI is local-only by default (`127.0.0.1`) and exposes no send/composer capab
 - For active-session AppleScript mode: Chrome menu `View -> Developer -> Allow JavaScript from Apple Events`
 - For dedicated-profile DevTools mode: Node.js 18+ available as `node`
 
-## Install
+## Install / run without modifying system Python
 
-Recommended on uv-managed Python installations:
+If you do not want to install anything into Python, use the no-install zipapp release. It is a single runnable file:
+
+```bash
+curl -L -o wa-business-collector.pyz \
+  https://github.com/bdjben/wa-business-collector/releases/latest/download/wa-business-collector.pyz
+python3.11 wa-business-collector.pyz ui --open-browser
+```
+
+You can keep that `.pyz` anywhere and delete it to remove the app. It does not use `pip` and does not modify the Python installation.
+
+## Optional install methods
+
+Recommended if you do want a persistent command on uv-managed Python installations:
 
 ```bash
 uv tool install --force git+https://github.com/bdjben/wa-business-collector.git
