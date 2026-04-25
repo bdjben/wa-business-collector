@@ -26,6 +26,7 @@ from wa_business_collector.launcher import (
     terminate_profile_processes,
 )
 from wa_business_collector.models import Snapshot
+from wa_business_collector.web_ui import UIConfig, run_ui_server
 
 
 def _merged_excluded_labels(exclude_labels: list[str] | None) -> list[str]:
@@ -207,6 +208,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_PROFILE_DIR),
     )
 
+    ui = subparsers.add_parser("ui")
+    ui.add_argument("--host", default="127.0.0.1")
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument("--profile-dir", default=str(DEFAULT_PROFILE_DIR))
+    ui.add_argument("--output", default="output/whatsapp-dashboard-export.json")
+    ui.add_argument("--debug-port", type=int, default=DEFAULT_DEBUG_PORT)
+    ui.add_argument("--marker-title", default=DEFAULT_MARKER_TITLE)
+    ui.add_argument("--marker-url-substring", default=DEFAULT_MARKER_URL_SUBSTRING)
+    ui.add_argument("--target-url", default=DEFAULT_TARGET_URL)
+    ui.add_argument("--display-name", default=DEFAULT_DISPLAY_NAME)
+    ui.add_argument("--account-label", default="WhatsApp Business")
+    ui.add_argument("--max-messages", type=int, default=MAX_MESSAGE_LOOKBACK_HARD_LIMIT)
+    ui.add_argument("--open-browser", action="store_true")
+
     status = subparsers.add_parser("status")
     status.add_argument(
         "--profile-dir",
@@ -288,6 +303,24 @@ def main(argv: Sequence[str] | None = None, *, collector: WhatsAppBusinessCollec
             "mode": "quit_profile",
             "profileDir": str(profile_dir),
         }
+    elif args.command == "ui":
+        run_ui_server(
+            UIConfig(
+                output_path=Path(args.output).expanduser(),
+                profile_dir=Path(args.profile_dir).expanduser(),
+                host=args.host,
+                port=args.port,
+                debug_port=args.debug_port,
+                marker_title=args.marker_title,
+                marker_url_substring=args.marker_url_substring,
+                target_url=args.target_url,
+                display_name=args.display_name,
+                account_label=args.account_label,
+                max_messages=max_messages,
+            ),
+            open_browser=args.open_browser,
+        )
+        return 0
     elif args.command == "status":
         payload = _status_payload(
             profile_dir=Path(args.profile_dir).expanduser(),

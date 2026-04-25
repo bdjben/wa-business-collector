@@ -413,3 +413,41 @@ def test_cli_max_messages_is_not_clamped_to_default(capsys, tmp_path: Path) -> N
 
     assert exit_code == 0
     assert '"maxRecentMessages": 50' in (tmp_path / "export.json").read_text()
+
+
+def test_cli_ui_starts_local_web_ui(monkeypatch, tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_ui_server(config, *, open_browser=False):
+        captured["config"] = config
+        captured["open_browser"] = open_browser
+
+    monkeypatch.setattr("wa_business_collector.cli.run_ui_server", fake_run_ui_server)
+
+    exit_code = main(
+        [
+            "ui",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "9009",
+            "--profile-dir",
+            str(tmp_path / "profile"),
+            "--output",
+            str(tmp_path / "export.json"),
+            "--max-messages",
+            "88",
+            "--open-browser",
+        ],
+        collector=StubCollector(),
+    )
+
+    assert exit_code == 0
+    assert captured["open_browser"] is True
+    config = captured["config"]
+    assert config.port == 9009
+    assert config.max_messages == 88
+    assert str(config.profile_dir) == str(tmp_path / "profile")
+    assert str(config.output_path) == str(tmp_path / "export.json")
+    assert config.marker_title == "WhatsApp Collector"
+    assert config.display_name is None

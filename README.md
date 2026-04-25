@@ -7,6 +7,7 @@ This project is deliberately not a bot and not a sender. It never types into Wha
 ## Features
 
 - Installable Python package with a `wa-business-collector` CLI.
+- Local polished web UI via `wa-business-collector ui` for login/setup, export runs, settings, status, and export preview.
 - Active Chrome session collection through AppleScript JavaScript from Apple Events.
 - Optional dedicated Chrome profile collection through Chrome DevTools Protocol for exact no-focus targeting.
 - No default display-name assumption: the dedicated window uses the first available macOS display unless `--display-name` is provided.
@@ -18,9 +19,31 @@ This project is deliberately not a bot and not a sender. It never types into Wha
 - Atomic JSON writes with automatic backups before replacing an existing export.
 - Runtime guardrails against send/composer JavaScript paths.
 
-## UI status
+## UI
 
-There is currently no graphical UI in this package. The first release is a CLI/export engine intended to be installed, scheduled, and integrated into another dashboard or workflow. The output JSON is stable enough for a web UI to consume, but this repository does not yet ship that UI.
+Start the local UI:
+
+```bash
+wa-business-collector ui
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765/
+```
+
+The UI provides:
+
+- Launch / Login for the dedicated Chrome profile
+- optional display-name targeting without assuming a monitor name
+- configurable max-message setting
+- account label and output-path settings
+- export run button
+- status cards for thread count, freshness, and runtime state
+- export preview and raw diagnostics
+
+The UI is local-only by default (`127.0.0.1`) and exposes no send/composer capability.
 
 ## Requirements
 
