@@ -11,10 +11,10 @@ from wa_business_collector.devtools_bridge import ChromeDevToolsBridge
 
 DEFAULT_CHROME_BINARY = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 DEFAULT_PROFILE_DIR = Path("~/.wa-business-collector/chrome-profile").expanduser()
-DEFAULT_MARKER_TITLE = "Hermes WhatsApp Collector"
-DEFAULT_MARKER_URL_SUBSTRING = "hermes-whatsapp-collector"
+DEFAULT_MARKER_TITLE = "WhatsApp Collector"
+DEFAULT_MARKER_URL_SUBSTRING = "whatsapp-collector"
 DEFAULT_TARGET_URL = "https://web.whatsapp.com/"
-DEFAULT_DISPLAY_NAME = "TV"
+DEFAULT_DISPLAY_NAME = None
 DEFAULT_FALLBACK_DISPLAY_NAME = "LAPTOP"
 DEFAULT_DEBUG_PORT = 19220
 DEFAULT_PLACEMENT_MODE = "edge-hidden"
@@ -114,7 +114,12 @@ def _normalized_display_name(name: str) -> str:
     return "".join(ch for ch in str(name).lower() if ch.isalnum())
 
 
-def choose_display(display_frames: dict[str, DisplayFrame], requested_name: str) -> tuple[DisplayFrame, bool]:
+def choose_display(display_frames: dict[str, DisplayFrame], requested_name: str | None = None) -> tuple[DisplayFrame, bool]:
+    if not display_frames:
+        raise ValueError("No macOS displays were detected")
+    if not requested_name:
+        return next(iter(display_frames.values())), False
+
     if requested_name in display_frames:
         return display_frames[requested_name], False
 
@@ -261,7 +266,7 @@ def launch_dedicated_chrome_window(
 
 def ensure_dedicated_whatsapp_window(
     *,
-    display_name: str = DEFAULT_DISPLAY_NAME,
+    display_name: str | None = DEFAULT_DISPLAY_NAME,
     placement_mode: str = DEFAULT_PLACEMENT_MODE,
     settle_seconds: float = DEFAULT_SETTLE_SECONDS,
     chrome_binary: str = DEFAULT_CHROME_BINARY,

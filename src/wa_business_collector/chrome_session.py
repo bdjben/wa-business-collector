@@ -12,8 +12,8 @@ from wa_business_collector.devtools_bridge import ChromeDevToolsBridge
 Runner = Callable[[str], str]
 
 DEFAULT_TARGET_URL_SUBSTRING = "web.whatsapp.com/"
-DEFAULT_MARKER_TITLE = "Hermes WhatsApp Collector"
-DEFAULT_MARKER_URL_SUBSTRING = "hermes-whatsapp-collector"
+DEFAULT_MARKER_TITLE = "WhatsApp Collector"
+DEFAULT_MARKER_URL_SUBSTRING = "whatsapp-collector"
 DEFAULT_DEBUG_PORT_ENV = "WA_CHROME_DEBUG_PORT"
 
 

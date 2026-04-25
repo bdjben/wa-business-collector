@@ -279,7 +279,7 @@ def test_cli_dashboard_export_backs_up_existing_output_before_replacing_it(tmp_p
     assert '"141394635137028@lid"' in output.read_text()
 
 
-def test_cli_ensure_tv_window_prints_window_payload(monkeypatch, capsys, tmp_path: Path) -> None:
+def test_cli_ensure_window_prints_window_payload(monkeypatch, capsys, tmp_path: Path) -> None:
     captured: dict[str, object] = {}
 
     def fake_ensure_dedicated_whatsapp_window(**kwargs):
@@ -288,8 +288,8 @@ def test_cli_ensure_tv_window_prints_window_payload(monkeypatch, capsys, tmp_pat
             "windowId": 4321,
             "display": {"name": "WHATSAPPMONITOR", "x": 0, "y": 0, "width": 1920, "height": 1080},
             "profileDir": str(tmp_path),
-            "markerTitle": "Hermes WhatsApp Collector",
-            "markerUrlSubstring": "hermes-whatsapp-collector",
+            "markerTitle": kwargs["marker_title"],
+            "markerUrlSubstring": kwargs["marker_url_substring"],
             "targetUrl": "https://web.whatsapp.com/",
             "placementMode": kwargs["placement_mode"],
             "settleSeconds": kwargs["settle_seconds"],
@@ -303,7 +303,7 @@ def test_cli_ensure_tv_window_prints_window_payload(monkeypatch, capsys, tmp_pat
 
     exit_code = main(
         [
-            "ensure-tv-window",
+            "ensure-window",
             "--profile-dir",
             str(tmp_path),
             "--display-name",
@@ -318,13 +318,15 @@ def test_cli_ensure_tv_window_prints_window_payload(monkeypatch, capsys, tmp_pat
 
     assert exit_code == 0
     assert captured["display_name"] == "WhatsAppMonitor"
+    assert captured["marker_title"] == "WhatsApp Collector"
+    assert captured["marker_url_substring"] == "whatsapp-collector"
     assert captured["placement_mode"] == "visible"
     assert captured["settle_seconds"] == 15
     out = capsys.readouterr().out
     assert '"windowId": 4321' in out
     assert '"placementMode": "visible"' in out
     assert '"settleSeconds": 15' in out
-    assert '"markerTitle": "Hermes WhatsApp Collector"' in out
+    assert '"markerTitle": "WhatsApp Collector"' in out
 
 
 def test_cli_quit_profile_terminates_dedicated_instance(monkeypatch, capsys, tmp_path: Path) -> None:
@@ -375,3 +377,39 @@ def test_cli_status_reports_dedicated_profile_readiness(monkeypatch, capsys, tmp
     assert '"mode": "dedicated_profile_status"' in out
     assert '"debugPort": 19220' in out
     assert '"threadCount": 1' in out
+
+
+def test_cli_ensure_window_does_not_assume_display_name(monkeypatch, capsys, tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_ensure_dedicated_whatsapp_window(**kwargs):
+        captured.update(kwargs)
+        return {
+            "windowId": 4321,
+            "display": {"name": "PRIMARY", "x": 0, "y": 0, "width": 1728, "height": 1117},
+            "profileDir": str(tmp_path),
+            "markerTitle": kwargs["marker_title"],
+            "markerUrlSubstring": kwargs["marker_url_substring"],
+            "targetUrl": "https://web.whatsapp.com/",
+            "placementMode": kwargs["placement_mode"],
+            "settleSeconds": kwargs["settle_seconds"],
+            "launched": False,
+        }
+
+    monkeypatch.setattr("wa_business_collector.cli.ensure_dedicated_whatsapp_window", fake_ensure_dedicated_whatsapp_window)
+
+    exit_code = main(["ensure-window", "--profile-dir", str(tmp_path)], collector=StubCollector())
+
+    assert exit_code == 0
+    assert captured["display_name"] is None
+    assert "TV" not in capsys.readouterr().out
+
+
+def test_cli_max_messages_is_not_clamped_to_default(capsys, tmp_path: Path) -> None:
+    exit_code = main(
+        ["dashboard-export", "--output", str(tmp_path / "export.json"), "--max-messages", "50"],
+        collector=StubCollector(),
+    )
+
+    assert exit_code == 0
+    assert '"maxRecentMessages": 50' in (tmp_path / "export.json").read_text()

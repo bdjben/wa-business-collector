@@ -12,10 +12,11 @@ from wa_business_collector.launcher import (
 )
 
 
-def test_marker_data_url_contains_expected_title() -> None:
-    url = marker_data_url("Hermes WhatsApp Collector")
+def test_marker_data_url_defaults_to_product_name() -> None:
+    url = marker_data_url()
     assert url.startswith("data:text/html,")
-    assert "Hermes%20WhatsApp%20Collector" in url
+    assert "WhatsApp%20Collector" in url
+    assert "Hermes" not in url
 
 
 def test_launch_dedicated_chrome_window_opens_background_chrome_instance(monkeypatch, tmp_path: Path) -> None:
@@ -35,7 +36,7 @@ def test_launch_dedicated_chrome_window_opens_background_chrome_instance(monkeyp
     launch_dedicated_chrome_window(
         chrome_binary="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         profile_dir=tmp_path,
-        marker_title="Hermes WhatsApp Collector",
+        marker_title="WhatsApp Collector",
         target_url="https://web.whatsapp.com/",
         debug_port=19220,
     )
@@ -80,16 +81,20 @@ def test_terminate_profile_processes_waits_until_profile_processes_exit(monkeypa
     assert calls[2] == ["pgrep", "-fal", str(tmp_path)]
 
 
-def test_choose_display_uses_requested_or_laptop_fallback() -> None:
+def test_choose_display_uses_requested_or_first_available_display() -> None:
     frames = {
         "LAPTOP": DisplayFrame(name="LAPTOP", x=0, y=0, width=1728, height=1117),
-        "TV": DisplayFrame(name="TV", x=-2123, y=1689, width=1920, height=1080),
+        "EXTERNAL": DisplayFrame(name="EXTERNAL", x=-2123, y=1689, width=1920, height=1080),
     }
-    display, fallback_used = choose_display(frames, "TV")
-    assert display.name == "TV"
+    display, fallback_used = choose_display(frames, "EXTERNAL")
+    assert display.name == "EXTERNAL"
     assert fallback_used is False
 
-    display, fallback_used = choose_display({"LAPTOP": frames["LAPTOP"]}, "TV")
+    display, fallback_used = choose_display(frames, None)
+    assert display.name == "LAPTOP"
+    assert fallback_used is False
+
+    display, fallback_used = choose_display(frames, "MISSING")
     assert display.name == "LAPTOP"
     assert fallback_used is True
 
@@ -107,7 +112,7 @@ def test_choose_display_matches_case_insensitive_display_names() -> None:
 
 
 def test_edge_hidden_bounds_uses_edge_sliver_positioning() -> None:
-    display = DisplayFrame(name="TV", x=-2123, y=1689, width=1920, height=1080)
+    display = DisplayFrame(name="EXTERNAL", x=-2123, y=1689, width=1920, height=1080)
     assert edge_hidden_bounds(display) == {
         "left": -251,
         "top": 2525,
@@ -156,7 +161,7 @@ def test_ensure_dedicated_whatsapp_window_launches_when_debug_port_is_not_ready(
             return {'windowId': 4321, 'targetId': 'target-1'}
 
     def fake_load_display_frames():
-        return {"TV": DisplayFrame(name="TV", x=-2123, y=1689, width=1920, height=1080)}
+        return {"PRIMARY": DisplayFrame(name="PRIMARY", x=-2123, y=1689, width=1920, height=1080)}
 
     def fake_launch_dedicated_chrome_window(**kwargs):
         launched['launch'] = kwargs
@@ -173,7 +178,7 @@ def test_ensure_dedicated_whatsapp_window_launches_when_debug_port_is_not_ready(
     assert payload["targetId"] == 'target-1'
     assert payload["launched"] is True
     assert payload["debugPort"] == 19220
-    assert payload["requestedDisplay"] == "TV"
+    assert payload["requestedDisplay"] is None
     assert payload["displayFallbackUsed"] is False
     assert launched['launch']['profile_dir'] == tmp_path
     assert launched['launch']['debug_port'] == 19220
@@ -200,7 +205,7 @@ def test_ensure_dedicated_whatsapp_window_reuses_existing_debug_port(monkeypatch
 
     monkeypatch.setattr(
         "wa_business_collector.launcher.load_display_frames",
-        lambda: {"TV": DisplayFrame(name="TV", x=0, y=0, width=1920, height=1080)},
+        lambda: {"EXTERNAL": DisplayFrame(name="EXTERNAL", x=0, y=0, width=1920, height=1080)},
     )
     monkeypatch.setattr("wa_business_collector.launcher.ChromeDevToolsBridge", FakeBridge)
     monkeypatch.setattr(
@@ -260,7 +265,7 @@ def test_ensure_dedicated_whatsapp_window_supports_visible_placement_mode(monkey
     assert placed == {'left': 4344, 'top': -2271, 'width': 1280, 'height': 960}
 
 
-def test_ensure_dedicated_whatsapp_window_falls_back_when_tv_missing(monkeypatch, tmp_path: Path) -> None:
+def test_ensure_dedicated_whatsapp_window_falls_back_when_requested_display_missing(monkeypatch, tmp_path: Path) -> None:
     placed: dict[str, object] = {}
 
     class FakeBridge:
@@ -287,10 +292,10 @@ def test_ensure_dedicated_whatsapp_window_falls_back_when_tv_missing(monkeypatch
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not relaunch")),
     )
 
-    payload = ensure_dedicated_whatsapp_window(profile_dir=tmp_path, display_name="TV", wait_attempts=1, delay_seconds=0)
+    payload = ensure_dedicated_whatsapp_window(profile_dir=tmp_path, display_name="MISSING", wait_attempts=1, delay_seconds=0)
 
     assert payload["windowId"] == 999
-    assert payload["requestedDisplay"] == 'TV'
+    assert payload["requestedDisplay"] == 'MISSING'
     assert payload["display"]["name"] == 'LAPTOP'
     assert payload["displayFallbackUsed"] is True
     assert placed == {'left': 1680, 'top': 873, 'width': 420, 'height': 220}

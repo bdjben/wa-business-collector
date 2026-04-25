@@ -9,12 +9,18 @@ This project is deliberately not a bot and not a sender. It never types into Wha
 - Installable Python package with a `wa-business-collector` CLI.
 - Active Chrome session collection through AppleScript JavaScript from Apple Events.
 - Optional dedicated Chrome profile collection through Chrome DevTools Protocol for exact no-focus targeting.
+- No default display-name assumption: the dedicated window uses the first available macOS display unless `--display-name` is provided.
+- Dedicated marker tab is named `WhatsApp Collector`.
 - Label inventory and visible chat-list extraction.
 - Labeled thread membership from WhatsApp Web IndexedDB.
-- Bounded recent-message windows with a hard cap of 15 messages per chat.
+- Configurable bounded recent-message windows through `--max-messages` or `WA_MAX_MESSAGES`.
 - Stable export contract at `output/whatsapp-dashboard-export.json` by default.
 - Atomic JSON writes with automatic backups before replacing an existing export.
 - Runtime guardrails against send/composer JavaScript paths.
+
+## UI status
+
+There is currently no graphical UI in this package. The first release is a CLI/export engine intended to be installed, scheduled, and integrated into another dashboard or workflow. The output JSON is stable enough for a web UI to consume, but this repository does not yet ship that UI.
 
 ## Requirements
 
@@ -57,12 +63,12 @@ wa-business-collector labels
 wa-business-collector chat-list
 ```
 
-Write the dashboard export:
+Write the dashboard export with any positive message cap you want:
 
 ```bash
 wa-business-collector dashboard-export \
   --account-label "WhatsApp Business" \
-  --max-messages 15 \
+  --max-messages 50 \
   --output output/whatsapp-dashboard-export.json
 ```
 
@@ -76,11 +82,22 @@ output/backup/whatsapp-dashboard-export.YYYYMMDD-HHMMSS.json
 
 Dedicated mode launches a separate Chrome profile with a remote-debugging port and a marker tab, then evaluates the WhatsApp tab through DevTools without bringing it to the front.
 
+First-time login, visible placement, no display-name assumption:
+
 ```bash
-wa-business-collector ensure-tv-window \
+wa-business-collector ensure-window \
   --profile-dir ~/.wa-business-collector/chrome-profile \
-  --display-name TV \
-  --placement-mode edge-hidden \
+  --placement-mode visible \
+  --debug-port 19220
+```
+
+If you want a specific monitor, pass it explicitly:
+
+```bash
+wa-business-collector ensure-window \
+  --profile-dir ~/.wa-business-collector/chrome-profile \
+  --display-name "Studio Display" \
+  --placement-mode visible \
   --debug-port 19220
 ```
 
@@ -88,11 +105,11 @@ Then collect through that DevTools-backed target:
 
 ```bash
 WA_CHROME_DEBUG_PORT=19220 \
-WA_CHROME_MARKER_TITLE="Hermes WhatsApp Collector" \
-WA_CHROME_MARKER_URL_SUBSTRING="hermes-whatsapp-collector" \
+WA_CHROME_MARKER_TITLE="WhatsApp Collector" \
+WA_CHROME_MARKER_URL_SUBSTRING="whatsapp-collector" \
 wa-business-collector dashboard-export \
   --account-label "WhatsApp Business" \
-  --max-messages 15 \
+  --max-messages 50 \
   --output output/whatsapp-dashboard-export.json
 ```
 
@@ -104,16 +121,18 @@ wa-business-collector quit-profile --profile-dir ~/.wa-business-collector/chrome
 
 ## Scheduled export wrapper
 
-A generic shell wrapper is included at `scripts/hourly_tv_export.sh`. It is safe to adapt for cron or launchd and is controlled through environment variables:
+A generic shell wrapper is included at `scripts/scheduled_export.sh`. It is safe to adapt for cron or launchd and is controlled through environment variables:
 
 ```bash
 WA_COLLECTOR_PROJECT_DIR=/path/to/wa-business-collector \
 WA_COLLECTOR_PROFILE_DIR=$HOME/.wa-business-collector/chrome-profile \
 WA_COLLECTOR_OUTPUT=/path/to/output/whatsapp-dashboard-export.json \
-WA_COLLECTOR_DISPLAY_NAME=TV \
+WA_MAX_MESSAGES=50 \
 WA_ACCOUNT_LABEL="WhatsApp Business" \
-scripts/hourly_tv_export.sh
+scripts/scheduled_export.sh
 ```
+
+To pin a specific display, add `WA_COLLECTOR_DISPLAY_NAME="Your Display Name"`. If omitted, the collector does not assume a display name.
 
 The wrapper tries dedicated-profile collection first, then active-session fallback, then preserves the existing non-empty export rather than overwriting it with an empty failure.
 

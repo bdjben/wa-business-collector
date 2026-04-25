@@ -24,6 +24,7 @@ MODEL_STORAGE_STORES_JS = '''window.__hermes_async_result = null;(function(){con
 
 DEFAULT_EXCLUDED_LABELS = ["Excluded Label", "Archive Label"]
 MAX_MESSAGE_LOOKBACK_HARD_LIMIT = 15
+DEFAULT_MAX_MESSAGES = MAX_MESSAGE_LOOKBACK_HARD_LIMIT
 
 
 class WhatsAppBusinessCollector:
@@ -742,7 +743,7 @@ class WhatsAppBusinessCollector:
     def _bounded_max_messages(max_messages: int | None) -> int:
         if max_messages is None:
             return MAX_MESSAGE_LOOKBACK_HARD_LIMIT
-        return max(1, min(int(max_messages), MAX_MESSAGE_LOOKBACK_HARD_LIMIT))
+        return max(1, int(max_messages))
 
     @staticmethod
     def _group_messages_by_jid(message_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:

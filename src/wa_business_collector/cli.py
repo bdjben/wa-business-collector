@@ -13,7 +13,18 @@ from wa_business_collector.collector import (
     MAX_MESSAGE_LOOKBACK_HARD_LIMIT,
     WhatsAppBusinessCollector,
 )
-from wa_business_collector.launcher import ensure_dedicated_whatsapp_window, terminate_profile_processes
+from wa_business_collector.launcher import (
+    DEFAULT_DEBUG_PORT,
+    DEFAULT_DISPLAY_NAME,
+    DEFAULT_MARKER_TITLE,
+    DEFAULT_MARKER_URL_SUBSTRING,
+    DEFAULT_PLACEMENT_MODE,
+    DEFAULT_PROFILE_DIR,
+    DEFAULT_SETTLE_SECONDS,
+    DEFAULT_TARGET_URL,
+    ensure_dedicated_whatsapp_window,
+    terminate_profile_processes,
+)
 from wa_business_collector.models import Snapshot
 
 
@@ -176,34 +187,35 @@ def build_parser() -> argparse.ArgumentParser:
     dashboard_export.add_argument("--exclude-label", action="append", default=[])
     dashboard_export.add_argument("--max-messages", type=int, default=MAX_MESSAGE_LOOKBACK_HARD_LIMIT)
 
-    ensure_window = subparsers.add_parser("ensure-tv-window")
-    ensure_window.add_argument("--display-name", default="TV")
-    ensure_window.add_argument("--placement-mode", choices=["edge-hidden", "visible"], default="edge-hidden")
-    ensure_window.add_argument(
-        "--profile-dir",
-        default="~/.wa-business-collector/chrome-profile",
-    )
-    ensure_window.add_argument("--marker-title", default="Hermes WhatsApp Collector")
-    ensure_window.add_argument("--marker-url-substring", default="hermes-whatsapp-collector")
-    ensure_window.add_argument("--target-url", default="https://web.whatsapp.com/")
-    ensure_window.add_argument("--debug-port", type=int, default=19220)
-    ensure_window.add_argument("--settle-seconds", type=float, default=15)
+    ensure_window = subparsers.add_parser("ensure-window")
+    for window_parser in (ensure_window,):
+        window_parser.add_argument("--display-name", default=DEFAULT_DISPLAY_NAME)
+        window_parser.add_argument("--placement-mode", choices=["edge-hidden", "visible"], default=DEFAULT_PLACEMENT_MODE)
+        window_parser.add_argument(
+            "--profile-dir",
+            default=str(DEFAULT_PROFILE_DIR),
+        )
+        window_parser.add_argument("--marker-title", default=DEFAULT_MARKER_TITLE)
+        window_parser.add_argument("--marker-url-substring", default=DEFAULT_MARKER_URL_SUBSTRING)
+        window_parser.add_argument("--target-url", default=DEFAULT_TARGET_URL)
+        window_parser.add_argument("--debug-port", type=int, default=DEFAULT_DEBUG_PORT)
+        window_parser.add_argument("--settle-seconds", type=float, default=DEFAULT_SETTLE_SECONDS)
 
     quit_profile = subparsers.add_parser("quit-profile")
     quit_profile.add_argument(
         "--profile-dir",
-        default="~/.wa-business-collector/chrome-profile",
+        default=str(DEFAULT_PROFILE_DIR),
     )
 
     status = subparsers.add_parser("status")
     status.add_argument(
         "--profile-dir",
-        default="~/.wa-business-collector/chrome-profile",
+        default=str(DEFAULT_PROFILE_DIR),
     )
-    status.add_argument("--debug-port", type=int, default=19220)
-    status.add_argument("--marker-title", default="Hermes WhatsApp Collector")
-    status.add_argument("--marker-url-substring", default="hermes-whatsapp-collector")
-    status.add_argument("--target-url", default="https://web.whatsapp.com/")
+    status.add_argument("--debug-port", type=int, default=DEFAULT_DEBUG_PORT)
+    status.add_argument("--marker-title", default=DEFAULT_MARKER_TITLE)
+    status.add_argument("--marker-url-substring", default=DEFAULT_MARKER_URL_SUBSTRING)
+    status.add_argument("--target-url", default=DEFAULT_TARGET_URL)
     status.add_argument("--output", default="output/whatsapp-dashboard-export.json")
     return parser
 
@@ -214,7 +226,7 @@ def main(argv: Sequence[str] | None = None, *, collector: WhatsAppBusinessCollec
     collector = collector or WhatsAppBusinessCollector()
     storage_dir = Path(getattr(args, "storage_dir", "storage"))
     excluded_labels = _merged_excluded_labels(getattr(args, "exclude_label", []))
-    max_messages = min(max(int(getattr(args, "max_messages", MAX_MESSAGE_LOOKBACK_HARD_LIMIT)), 1), MAX_MESSAGE_LOOKBACK_HARD_LIMIT)
+    max_messages = max(int(getattr(args, "max_messages", MAX_MESSAGE_LOOKBACK_HARD_LIMIT)), 1)
 
     if args.command == "labels":
         payload = {"labels": [label.__dict__ for label in collector.collect_labels()]}
@@ -258,7 +270,7 @@ def main(argv: Sequence[str] | None = None, *, collector: WhatsAppBusinessCollec
             max_messages=max_messages,
         )
         payload["written_to"] = str(_write_atomic_json(payload, Path(args.output)))
-    elif args.command == "ensure-tv-window":
+    elif args.command == "ensure-window":
         payload = ensure_dedicated_whatsapp_window(
             display_name=args.display_name,
             placement_mode=args.placement_mode,

@@ -8,10 +8,10 @@ TMP_DIR="${WA_COLLECTOR_TMP_DIR:-$PROJECT_DIR/output/.tmp}"
 DEDICATED_CANDIDATE="$TMP_DIR/whatsapp-dashboard-export.dedicated.json"
 ACTIVE_CANDIDATE="$TMP_DIR/whatsapp-dashboard-export.active.json"
 PROFILE_DIR="${WA_COLLECTOR_PROFILE_DIR:-$HOME/.wa-business-collector/chrome-profile}"
-DISPLAY_NAME="${WA_COLLECTOR_DISPLAY_NAME:-TV}"
+DISPLAY_NAME="${WA_COLLECTOR_DISPLAY_NAME:-}"
 DEBUG_PORT="${WA_CHROME_DEBUG_PORT:-19220}"
-MARKER_TITLE="${WA_CHROME_MARKER_TITLE:-Hermes WhatsApp Collector}"
-MARKER_URL_SUBSTRING="${WA_CHROME_MARKER_URL_SUBSTRING:-hermes-whatsapp-collector}"
+MARKER_TITLE="${WA_CHROME_MARKER_TITLE:-WhatsApp Collector}"
+MARKER_URL_SUBSTRING="${WA_CHROME_MARKER_URL_SUBSTRING:-whatsapp-collector}"
 TARGET_URL="${WA_CHROME_TARGET_URL:-https://web.whatsapp.com/}"
 ACCOUNT_LABEL="${WA_ACCOUNT_LABEL:-WhatsApp Business}"
 MAX_MESSAGES="${WA_MAX_MESSAGES:-15}"
@@ -79,15 +79,20 @@ backup_and_replace_output() {
 
 current_count=$(validate_export "$OUTPUT_PATH")
 
-"${RUNNER[@]}" ensure-tv-window \
-  --profile-dir "$PROFILE_DIR" \
-  --display-name "$DISPLAY_NAME" \
-  --placement-mode edge-hidden \
-  --settle-seconds 15 \
-  --marker-title "$MARKER_TITLE" \
-  --marker-url-substring "$MARKER_URL_SUBSTRING" \
-  --target-url "$TARGET_URL" \
-  --debug-port "$DEBUG_PORT" >/tmp/wa-collector-window.json || true
+ENSURE_WINDOW_ARGS=(
+  ensure-window
+  --profile-dir "$PROFILE_DIR"
+  --placement-mode edge-hidden
+  --settle-seconds 15
+  --marker-title "$MARKER_TITLE"
+  --marker-url-substring "$MARKER_URL_SUBSTRING"
+  --target-url "$TARGET_URL"
+  --debug-port "$DEBUG_PORT"
+)
+if [[ -n "$DISPLAY_NAME" ]]; then
+  ENSURE_WINDOW_ARGS+=(--display-name "$DISPLAY_NAME")
+fi
+"${RUNNER[@]}" "${ENSURE_WINDOW_ARGS[@]}" >/tmp/wa-collector-window.json || true
 
 set +e
 WA_CHROME_DEBUG_PORT="$DEBUG_PORT" \

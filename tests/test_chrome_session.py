@@ -55,8 +55,8 @@ def test_run_json_targets_marker_window_when_configured() -> None:
     session = ChromeWhatsAppSession(
         runner=runner,
         target=ChromeTarget(
-            marker_title="Hermes WhatsApp Collector",
-            marker_url_substring="hermes-whatsapp-collector",
+            marker_title="WhatsApp Collector",
+            marker_url_substring="whatsapp-collector",
             target_url_substring="web.whatsapp.com/",
         ),
     )
@@ -65,8 +65,8 @@ def test_run_json_targets_marker_window_when_configured() -> None:
 
     assert result == {"ok": True}
     [script] = runner.call_args.args
-    assert 'Hermes WhatsApp Collector' in script
-    assert 'hermes-whatsapp-collector' in script
+    assert 'WhatsApp Collector' in script
+    assert 'whatsapp-collector' in script
     assert 'web.whatsapp.com/' in script
     assert 'No Chrome tab matched configured marker/target selector' in script
 
@@ -90,14 +90,14 @@ def test_run_json_uses_devtools_bridge_when_debug_port_is_configured(monkeypatch
     monkeypatch.setenv('WA_CHROME_DEBUG_PORT', '19220')
     monkeypatch.setattr('wa_business_collector.chrome_session.ChromeDevToolsBridge', FakeBridge)
 
-    session = ChromeWhatsAppSession(target=ChromeTarget(marker_title='Hermes WhatsApp Collector', marker_url_substring='hermes-whatsapp-collector', target_url_substring='web.whatsapp.com/'))
+    session = ChromeWhatsAppSession(target=ChromeTarget(marker_title='WhatsApp Collector', marker_url_substring='whatsapp-collector', target_url_substring='web.whatsapp.com/'))
     result = session.run_json('JSON.stringify({ok:true})')
 
     assert result == {'ok': True}
     assert seen['init'] == {
         'port': 19220,
-        'marker_title': 'Hermes WhatsApp Collector',
-        'marker_url_substring': 'hermes-whatsapp-collector',
+        'marker_title': 'WhatsApp Collector',
+        'marker_url_substring': 'whatsapp-collector',
         'target_url_substring': 'web.whatsapp.com/',
     }
     assert seen['expression'] == 'JSON.stringify({ok:true})'
