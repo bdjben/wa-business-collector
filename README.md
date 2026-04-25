@@ -56,25 +56,47 @@ The UI is local-only by default (`127.0.0.1`) and exposes no send/composer capab
 
 ## Install
 
-From a local checkout:
+Recommended on uv-managed Python installations:
 
 ```bash
-python3 -m pip install .
+uv tool install --force git+https://github.com/bdjben/wa-business-collector.git
 ```
 
-For editable development:
+Then run:
+
+```bash
+wa-business-collector --help
+wa-business-collector ui --open-browser
+```
+
+One-off without permanently installing:
+
+```bash
+uv tool run --from git+https://github.com/bdjben/wa-business-collector.git wa-business-collector --help
+```
+
+If your Python allows pip installs, install from GitHub with:
+
+```bash
+python3.11 -m pip install --user --upgrade git+https://github.com/bdjben/wa-business-collector.git
+```
+
+If pip reports `externally-managed-environment`, do **not** use `--break-system-packages`; use `uv tool install` above or a virtual environment:
+
+```bash
+python3.11 -m venv ~/.wa-business-collector/venv
+~/.wa-business-collector/venv/bin/python -m pip install --upgrade pip
+~/.wa-business-collector/venv/bin/python -m pip install git+https://github.com/bdjben/wa-business-collector.git
+~/.wa-business-collector/venv/bin/wa-business-collector ui --open-browser
+```
+
+For editable development from a local checkout:
 
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e .
 python -m pip install pytest build
-```
-
-After install, the command is available as:
-
-```bash
-wa-business-collector --help
 ```
 
 ## Quick start
